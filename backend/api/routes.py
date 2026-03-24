@@ -8,6 +8,7 @@ from backend.services.analytics import (
     get_category_breakdown,
     get_overspending
 )
+from backend.services.insights import generate_insights
 
 router = APIRouter()
 
@@ -38,3 +39,7 @@ def category_breakdown():
 @router.get("/overspending")
 def overspending():
     return get_overspending()
+
+@router.get("/insights")
+def insights():
+    return generate_insights()
