@@ -3,19 +3,33 @@ import pandas as pd
 def parse_csv(file_path):
     df = pd.read_csv(file_path)
 
-    # Adjust based on dataset columns
+    # Rename based on YOUR dataset
     df = df.rename(columns={
-        "Date": "date",
-        "Description": "description",
-        "Debit": "debit",
-        "Credit": "credit",
-        "Balance": "balance"
+        "narration": "description",
+        "transactionTimestamp": "date",
+        "currentBalance": "balance",
+        "type": "type",
+        "amount": "amount"
     })
 
-    df["amount"] = df["debit"].fillna(0) * -1 + df["credit"].fillna(0)
-    df["type"] = df["amount"].apply(lambda x: "debit" if x < 0 else "credit")
+    # -------- CLEAN DATA --------
 
+    # Handle null descriptions
+    df["description"] = df["description"].fillna("unknown")
+
+    # Convert date to proper format
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+
+    # Convert amount to float
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+
+    # Convert type
+    df["type"] = df["type"].apply(lambda x: "debit" if str(x).upper() == "DEBIT" else "credit")
+
+    # Drop rows with invalid data
+    df = df.dropna(subset=["date", "amount"])
+
+    # Select final columns
     df = df[["date", "description", "amount", "type", "balance"]]
 
     return df
-

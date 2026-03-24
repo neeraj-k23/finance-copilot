@@ -1,7 +1,16 @@
 import re
 
-def extract_merchant(description: str) -> str:
-    desc = description.lower()
+def extract_merchant(description) -> str:
+    desc = str(description).lower()
+
+    # Handle UPI patterns
+    if "upi" in desc:
+        parts = desc.split("/")
+        if len(parts) > 1:
+            possible = parts[-1]
+            if possible.isalpha() and len(possible) > 3:
+                return possible.capitalize()
+        return "UPI"
 
     patterns = {
         "swiggy": "Swiggy",
@@ -10,14 +19,17 @@ def extract_merchant(description: str) -> str:
         "uber": "Uber",
         "ola": "Ola",
         "netflix": "Netflix",
-        "spotify": "Spotify"
+        "spotify": "Spotify",
+        "fuel": "Fuel",
+        "gas": "Fuel",
+        "petrol": "Fuel",
+        "atm": "ATM"
     }
 
     for key, value in patterns.items():
         if key in desc:
             return value
 
-    # fallback: clean text
     desc = re.sub(r'[^a-zA-Z ]', ' ', desc)
     words = desc.split()
 
