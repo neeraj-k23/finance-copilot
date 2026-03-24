@@ -127,3 +127,30 @@ def get_overspending():
         })
 
     return result
+
+def get_category_trends():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT 
+            DATE_FORMAT(date, '%Y-%m') as month,
+            category,
+            SUM(CASE WHEN type='debit' THEN amount ELSE 0 END) as total
+        FROM transactions
+        GROUP BY month, category
+        ORDER BY month;
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Convert to frontend-friendly format
+    data = {}
+
+    for month, category, total in rows:
+        if month not in data:
+            data[month] = {"month": month}
+        data[month][category] = float(total or 0)
+
+    return list(data.values())

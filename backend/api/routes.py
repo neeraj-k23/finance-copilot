@@ -9,6 +9,8 @@ from backend.services.analytics import (
     get_overspending
 )
 from backend.services.insights import generate_insights
+from backend.services.analytics import get_category_trends
+
 
 router = APIRouter()
 
@@ -43,3 +45,7 @@ def overspending():
 @router.get("/insights")
 def insights():
     return generate_insights()
+
+@router.get("/category-trends")
+def category_trends():
+    return get_category_trends()
