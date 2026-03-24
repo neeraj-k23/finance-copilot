@@ -1,6 +1,19 @@
 from backend.services.analytics import get_overspending
 
 
+def z_to_text(z):
+    if z > 2:
+        return "much higher than usual"
+    elif z > 1:
+        return "slightly higher than usual"
+    elif z < -2:
+        return "significantly lower than usual"
+    elif z < -1:
+        return "lower than usual"
+    else:
+        return "within your normal range"
+
+
 def generate_insights():
     data = get_overspending()
 
@@ -8,35 +21,34 @@ def generate_insights():
 
     for item in data:
         category = item["category"]
-        avg_change = item["avg_change_percent"]
-        prev_change = item["prev_change_percent"]
+        current = item["current_month"]
+        mean = item["weighted_mean"]
+        z = item["z_score"]
         status = item["status"]
+
+        human_text = z_to_text(z)
 
         if status == "High Overspending":
             msg = (
-                f"Your {category} spending is significantly higher than usual "
-                f"({round(avg_change, 1)}% above average). Consider reviewing your expenses."
+                f"Your {category} spending is {human_text}. "
+                f"You spent {current}, compared to your usual average of around {mean}. "
+                f"This could indicate unusually high spending in this category."
             )
 
-        elif status == "Recent Spike":
+        elif status == "Above Normal":
             msg = (
-                f"There is a recent spike in your {category} spending "
-                f"({round(prev_change, 1)}% increase from last month)."
-            )
-
-        elif status == "Above Average":
-            msg = (
-                f"Your {category} spending is higher than your usual pattern "
-                f"({round(avg_change, 1)}% above average)."
+                f"Your {category} spending is {human_text}. "
+                f"Current spend is {current} vs your typical ~{mean}."
             )
 
         elif status == "Reduced Spending":
             msg = (
-                f"Good job! Your {category} spending has decreased significantly."
+                f"Your {category} spending is {human_text}. "
+                f"You spent {current}, which is below your usual level (~{mean})."
             )
 
         else:
-            continue
+            continue  # skip normal cases
 
         insights.append({
             "category": category,

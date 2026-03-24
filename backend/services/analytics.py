@@ -1,3 +1,4 @@
+import math
 from backend.models.db import get_connection
 
 
@@ -45,6 +46,9 @@ def get_category_breakdown():
     ]
 
 
+
+
+
 def get_overspending():
     conn = get_connection()
     cursor = conn.cursor()
@@ -72,42 +76,53 @@ def get_overspending():
     result = []
 
     for category, values in data.items():
-        if len(values) < 2:
-            continue
+        if len(values) < 3:
+            continue  # need enough history
 
-        # Sort by month
         values.sort()
 
         current_month, current_val = values[-1]
-        prev_month, prev_val = values[-2]
-
-        # Historical average (excluding current)
         historical_vals = [v for (_, v) in values[:-1]]
-        avg = sum(historical_vals) / len(historical_vals) if historical_vals else 0
 
-        # Avoid division by zero
-        prev_change = ((current_val - prev_val) / prev_val * 100) if prev_val != 0 else 0
-        avg_change = ((current_val - avg) / avg * 100) if avg != 0 else 0
+        n = len(historical_vals)
 
-        # Decision logic
-        status = "Normal"
+        # -------- WEIGHTED MEAN --------
+        weights = list(range(1, n + 1))  # increasing weights
+        weighted_sum = sum(w * v for w, v in zip(weights, historical_vals))
+        weight_total = sum(weights)
 
-        if prev_change > 30 and avg_change > 30:
+        weighted_mean = weighted_sum / weight_total
+
+        # -------- WEIGHTED STD DEV --------
+        variance = sum(
+            w * ((v - weighted_mean) ** 2)
+            for w, v in zip(weights, historical_vals)
+        ) / weight_total
+
+        weighted_std = math.sqrt(variance)
+
+        if weighted_std == 0:
+            continue
+
+        # -------- Z-SCORE --------
+        z_score = (current_val - weighted_mean) / weighted_std
+
+        # -------- CLASSIFICATION --------
+        if z_score > 2:
             status = "High Overspending"
-        elif prev_change > 30:
-            status = "Recent Spike"
-        elif avg_change > 30:
-            status = "Above Average"
-        elif prev_change < -30 and avg_change < -30:
+        elif z_score > 1:
+            status = "Above Normal"
+        elif z_score < -1:
             status = "Reduced Spending"
+        else:
+            status = "Normal"
 
         result.append({
             "category": category,
             "current_month": current_val,
-            "previous_month": prev_val,
-            "historical_avg": round(avg, 2),
-            "prev_change_percent": round(prev_change, 2),
-            "avg_change_percent": round(avg_change, 2),
+            "weighted_mean": round(weighted_mean, 2),
+            "weighted_std": round(weighted_std, 2),
+            "z_score": round(z_score, 2),
             "status": status
         })
 
