@@ -5,7 +5,8 @@ import os
 from backend.services.ingest import ingest_transactions
 from backend.services.analytics import (
     get_monthly_spend,
-    get_category_breakdown
+    get_category_breakdown,
+    get_overspending
 )
 
 router = APIRouter()
@@ -33,3 +34,7 @@ def monthly_spend():
 @router.get("/category-breakdown")
 def category_breakdown():
     return get_category_breakdown()
+
+@router.get("/overspending")
+def overspending():
+    return get_overspending()
